@@ -20,6 +20,12 @@ G_Pool()
 G_Conv()
 G_Pool()
 G_Conv()
+G_Deconv()
+G_Conv()
+G_Deconv()
+G_Deconv()
+G_Deconv()
+G_Conv()
 G_Output()
 G_Controleur.couches_graph[0].eval()
 G_Controleur.lier(G_Controleur.couches_graph[0].couche_id,G_Controleur.couches_graph[1].couche_id,forcer=True)
@@ -42,8 +48,9 @@ while G_Controleur.couches_graph[i].__class__.__name__ != "G_Output" and i >= 0:
     i -= 1
 if i < 0:
     raise Exception("Output missing")
-for i,n in enumerate(G_Controleur.couches_graph):
-    if len(n.enfant) == 0:
+for j,n in enumerate(G_Controleur.couches_graph):
+    if len(n.enfant) == 0 and n.__class__.__name__ != "G_Output":
+        print("Couche %d n'a pas d'enfant"%(n.couche_id))
         G_Controleur.lier(n.couche_id,G_Controleur.couches_graph[i].couche_id,forcer=True)
 G_Controleur.afficher("fin")
 dossier_fichier = os.path.abspath(os.path.dirname(__file__))
