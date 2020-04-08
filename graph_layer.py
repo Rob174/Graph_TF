@@ -19,6 +19,7 @@ class G_Layer:
         self.couche_id = graph_controleur.G_Controleur.new_id()
         self.couche_id_type = -1
         self.parent = []#parent(s) direct(s) index
+        self.parents = []
         self.enfant = []#directes uniquement                            ******************************Appliquer la fonction d'update et voir si assez d'avoir uniquement les fils directs
         self.taille = None #taille de l'image manipulée
         self.couche_pool = 0#couche courante couche de pooling
@@ -34,7 +35,7 @@ class G_Layer:
         else:
             tailles = []
             for p in self.parent:
-                size = p.get_size_parent()
+                size = graph_controleur.G_Controleur.couches_graph[p].get_size_parent()
                 if size == []:
                     size = [0]
                 tailles += size
@@ -46,7 +47,7 @@ class G_Layer:
         else:
             tailles = []
             for p in self.enfant:
-                size = p.get_size_enfant()
+                size = graph_controleur.G_Controleur.couches_graph[p].get_size_enfant()
                 if size == []:
                     size = [0]
                 tailles += size

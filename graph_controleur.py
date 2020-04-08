@@ -31,38 +31,47 @@ class G_Controleur:
         #Calcul de la difference de taille
         #nb de réduction de taille (pool = -1 ; deconv = +1) : dimension < 0 => réduit globalement la taille
         
-        #noeud courant, dimensions
-        dim_crt =                   -G_Controleur.couches_graph[couche_id_1].nb_pool_parent_tot -G_Controleur.couches_graph[couche_id_1].couche_pool+G_Controleur.couches_graph[couche_id_1].couche_deconv+     G_Controleur.couches_graph[couche_id_1].nb_deconv_parent_tot
-        dim_crt_enfant  = dim_crt     -G_Controleur.couches_graph[couche_id_1].nb_pool_enfant_tot+       G_Controleur.couches_graph[couche_id_1].nb_deconv_enfant_tot
-        #noeud peut-être enfant, dimensions
-        dim_nd_sel =                          -G_Controleur.couches_graph[couche_id_2].nb_pool_parent_tot+   G_Controleur.couches_graph[couche_id_2].nb_deconv_parent_tot    #on exclut la couche courante
-        dim_nd_sel_enfant = dim_nd_sel          -G_Controleur.couches_graph[couche_id_2].nb_pool_enfant_tot+     G_Controleur.couches_graph[couche_id_2].nb_deconv_enfant_tot     -G_Controleur.couches_graph[couche_id_2].couche_pool  +G_Controleur.couches_graph[couche_id_2].couche_deconv#on ajoute la couche courante
+        tailles_source = G_Controleur.couches_graph[couche_id_1].get_size_parent()
+        tailles_dest_enfants = G_Controleur.couches_graph[couche_id_2].get_size_enfant()
+        tailles_dest_parents = G_Controleur.couches_graph[couche_id_2].get_size_parent()
         #Le chemin jusqu'à la racine côté couche courante et le chemin jusqu'aux feuilles n'a pas trop de couche de pooling au total
         #Si les dimensions de sortie du layer courant et celles d'entrée du layer cibles coincident
-        diff_taille = dim_crt-dim_nd_sel
-        print("Difference de taille : %d de la couche %d vers %d"%(diff_taille,couche_id_1,couche_id_2))
-        if diff_taille == 0:
-            if min(dim_crt+dim_crt_enfant,dim_crt+dim_nd_sel_enfant) >= 0 and diff_taille == 0:
-                lien = G_Controleur.hp.Choice('lien_layer_%d_vers_%d'%(G_Controleur.couches_graph[couche_id_1].couche_id,G_Controleur.couches_graph[couche_id_2].couche_id),[False,True],default=False)
-            if forcer == True:
-                lien = True
-        if diff_taille != 0 and forcer == True:
-            couche_adapt = G_Controleur.couches_graph[couche_id_1]
-            if diff_taille > 0:
-                for i in range(diff_taille):
-                    adapt = graph_layer.G_Pool()
-                    G_Controleur.couches_graph[adapt.couche_id].invisible_adapt = True
-                    G_Controleur.lier(couche_adapt.couche_id,G_Controleur.couches_graph[adapt.couche_id].couche_id,forcer=True)
-                    couche_adapt = G_Controleur.couches_graph[adapt.couche_id]
-            else:
-                for i in range(-diff_taille):
-                    adapt = graph_layer.G_Deconv()
-                    G_Controleur.couches_graph[adapt.couche_id].invisible_adapt = True
-                    G_Controleur.lier(couche_adapt.couche_id,G_Controleur.couches_graph[adapt.couche_id].couche_id,forcer=True)
-                    couche_adapt = G_Controleur.couches_graph[adapt.couche_id]
-            G_Controleur.lier(G_Controleur.couches_graph[couche_adapt.couche_id].couche_id,G_Controleur.couches_graph[couche_id_2].couche_id,forcer=True)
-            return 
-        if lien==True:
+        taille_si_lie = 0
+        if len(tailles_source) != 0:
+            taille_si_lie += min(tailles_source)
+        if len(tailles_dest_enfants) != 0:
+            taille_si_lie += min(tailles_dest_enfants)
+        
+        if taille_si_lie < -8:#Si on a trop de couches de pooling si on liait les deux couches
+            lier = False
+            return
+        #Vérifie si les tailles sont compatibles
+        verification_taille = False
+        taille_2 = None
+        if len(G_Controleur.couches_graph[couche_id_2].parent) == 0:
+            verification_taille = True
+        else:
+            diff_taille = tailles_source[0]-(tailles_dest_parents[0]+G_Controleur.couches_graph[couche_id_2].couche_pool-G_Controleur.couches_graph[couche_id_2].couche_deconv)
+            if diff_taille == 0:
+                verification_taille = True
+            elif forcer == True:
+                couche_adapt = G_Controleur.couches_graph[couche_id_1]
+                if diff_taille > 0:
+                    for i in range(diff_taille):
+                        adapt = graph_layer.G_Pool()
+                        G_Controleur.couches_graph[adapt.couche_id].invisible_adapt = True
+                        G_Controleur.lier(couche_adapt.couche_id,G_Controleur.couches_graph[adapt.couche_id].couche_id)
+                        couche_adapt = G_Controleur.couches_graph[adapt.couche_id]
+                else:
+                    for i in range(-diff_taille):
+                        adapt = graph_layer.G_Deconv()
+                        G_Controleur.couches_graph[adapt.couche_id].invisible_adapt = True
+                        G_Controleur.lier(couche_adapt.couche_id,G_Controleur.couches_graph[adapt.couche_id].couche_id)
+                        couche_adapt = G_Controleur.couches_graph[adapt.couche_id]
+                G_Controleur.lier(G_Controleur.couches_graph[couche_adapt.couche_id].couche_id,G_Controleur.couches_graph[couche_id_2].couche_id)
+                return 
+                
+        if verification_taille==True:
             print("Lien entre %d et %d"%(couche_id_1,couche_id_2))
             G_Controleur.graph.edge(str(G_Controleur.couches_graph[couche_id_1].couche_id),str(G_Controleur.couches_graph[couche_id_2].couche_id))
             G_Controleur.couches_graph[couche_id_2].parent.append(G_Controleur.couches_graph[couche_id_1].couche_id)
@@ -72,7 +81,4 @@ class G_Controleur:
                 if p not in G_Controleur.couches_graph[couche_id_2].parents:
                     G_Controleur.couches_graph[couche_id_2].parents.append(p)
             G_Controleur.couches_graph[couche_id_1].enfant.append(G_Controleur.couches_graph[couche_id_2].couche_id)
-
-            G_Controleur.couches_graph[couche_id_1].update_max_branches(type_brch='enfant')
-            G_Controleur.couches_graph[couche_id_2].update_max_branches(type_brch='parent')
 
