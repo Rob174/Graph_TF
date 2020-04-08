@@ -15,13 +15,6 @@ hp = HP_test()
 nb_max_layer = 200
 possibilites_filtres = [1,3,10,50,100,500]
 
-
-
-
-
-
-
-
 print("Début")
 G_Layer.couches_graph = []
 G_Layer.couche_id = 0
