@@ -147,6 +147,9 @@ class G_Controleur:
                         couche_adapt = self.couches_graph[adapt.couche_id]
                 self.lier(self.couches_graph[couche_adapt.couche_id].couche_id,self.couches_graph[couche_id_2].couche_id)
                 return 
+        test_boucle = self.couches_graph[couche_id_2].test_actualiser_enfant(couche_id_1)
+        if test_boucle == False:
+            return
         choix_lien = False
         if verification_taille == True and forcer == False:
             choix_lien = self.hp.Choice("lien_%s%d_%s%d"%(self.couches_graph[couche_id_1].__class__.__name__,self.couches_graph[couche_id_1].couche_id_type,self.couches_graph[couche_id_2].__class__.__name__,self.couches_graph[couche_id_2].couche_id_type),[True,False],default=False) 
