@@ -132,7 +132,7 @@ class G_Controleur:
             diff_taille = tailles_source[0]-(tailles_dest_parents[0]+self.couches_graph[couche_id_2].couche_pool-self.couches_graph[couche_id_2].couche_deconv)#Calcul la différence entre la taille à la sortie de la première couche et celle à l'entrée!! de la seconde
             if diff_taille == 0:
                 verification_taille = True
-            elif forcer == True:
+            else:
                 couche_adapt = self.couches_graph[couche_id_1]
                 if diff_taille > 0:
                     for i in range(diff_taille):
