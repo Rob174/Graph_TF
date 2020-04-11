@@ -45,9 +45,9 @@ class G_Layer:
         del self.invisible_adapt
     def test_actualiser_enfant(self,new_id):
         ok = True
-        self.controleur.couches_graph[e].tmp_parents.append(new_id)
-        self.controleur.couches_graph[e].tmp_parents += self.controleur.couches_graph[new_id].parents
-        self.controleur.couches_graph[e].tmp_parents = list(dict.fromkeys(self.controleur.couches_graph[e].tmp_parents))
+        self.tmp_parents.append(new_id)
+        self.tmp_parents += self.controleur.couches_graph[new_id].parents
+        self.tmp_parents = list(dict.fromkeys(self.tmp_parents))
         for e in self.enfant:
             self.controleur.couches_graph[e].parents += self.parents
             self.controleur.couches_graph[e].parents = list(dict.fromkeys(self.controleur.couches_graph[e].parents))

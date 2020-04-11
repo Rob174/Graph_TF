@@ -124,11 +124,12 @@ class G_Controleur:
             return
         #Vérifie si les tailles sont compatibles
         verification_taille = False
-        #taille_2 = None
         if len(self.couches_graph[couche_id_1].parent) == 0:
             verification_taille = True
+        elif len(self.couches_graph[couche_id_2].parent) == 0 and len(self.couches_graph[couche_id_2].enfant)==0:
+            verification_taille = True
         else:
-            diff_taille = tailles_source[0]-(tailles_dest_parents[0]+self.couches_graph[couche_id_2].couche_pool-self.couches_graph[couche_id_2].couche_deconv)
+            diff_taille = tailles_source[0]-(tailles_dest_parents[0]+self.couches_graph[couche_id_2].couche_pool-self.couches_graph[couche_id_2].couche_deconv)#Calcul la différence entre la taille à la sortie de la première couche et celle à l'entrée!! de la seconde
             if diff_taille == 0:
                 verification_taille = True
             elif forcer == True:
@@ -137,13 +138,13 @@ class G_Controleur:
                     for i in range(diff_taille):
                         adapt = graph_layer.G_Pool(self)
                         self.couches_graph[adapt.couche_id].invisible_adapt = True
-                        self.lier(couche_adapt.couche_id,self.couches_graph[adapt.couche_id].couche_id)
+                        self.lier(couche_adapt.couche_id,self.couches_graph[adapt.couche_id].couche_id,forcer=True)
                         couche_adapt = self.couches_graph[adapt.couche_id]
                 else:
                     for i in range(-diff_taille):
                         adapt = graph_layer.G_Deconv(self)
                         self.couches_graph[adapt.couche_id].invisible_adapt = True
-                        self.lier(couche_adapt.couche_id,self.couches_graph[adapt.couche_id].couche_id)
+                        self.lier(couche_adapt.couche_id,self.couches_graph[adapt.couche_id].couche_id,forcer=True)
                         couche_adapt = self.couches_graph[adapt.couche_id]
                 self.lier(self.couches_graph[couche_adapt.couche_id].couche_id,self.couches_graph[couche_id_2].couche_id)
                 return 
