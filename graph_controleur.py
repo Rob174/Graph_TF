@@ -173,6 +173,7 @@ def create_model(hparam):
     compteur_model += 1
     controleur = G_Controleur(hparam)
     model = controleur.model
+    print("Nb param : ",model.count_params())
     controleur.clean()
     del controleur
     return model
