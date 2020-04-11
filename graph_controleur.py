@@ -105,9 +105,6 @@ class G_Controleur:
         #Calcul de la difference de taille
         #nb de réduction de taille (pool = -1 ; deconv = +1) : dimension < 0 => réduit globalement la taille
         
-        global compteur_model
-        if compteur_model == 2 and couche_id_1==4 and couche_id_2==5:
-            break_point = 0
         tailles_source = self.couches_graph[couche_id_1].get_size_parent()
         tailles_dest_enfants = self.couches_graph[couche_id_2].get_size_enfant()
         tailles_dest_parents = self.couches_graph[couche_id_2].get_size_parent()
@@ -121,6 +118,9 @@ class G_Controleur:
         
         if taille_si_lie < -8:#Si on a trop de couches de pooling si on liait les deux couches
             lier = False
+            return
+        verif_boucle = self.couches_graph[couche_id_2].test_actualiser_enfant(couche_id_1)
+        if verif_boucle == False:
             return
         #Vérifie si les tailles sont compatibles
         verification_taille = False

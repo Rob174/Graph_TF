@@ -41,11 +41,26 @@ class G_Layer:
         del self.couche_pool
         del self.couche_deconv
         del self.invisible_adapt
+    def test_actualiser_enfant(self,new_id):
+        ok = True
+        self.controleur.couches_graph[e].tmp_parents.append(new_id)
+        self.controleur.couches_graph[e].tmp_parents += self.controleur.couches_graph[new_id].parents
+        self.controleur.couches_graph[e].tmp_parents = list(dict.fromkeys(self.controleur.couches_graph[e].tmp_parents))
+        for e in self.enfant:
+            self.controleur.couches_graph[e].parents += self.parents
+            self.controleur.couches_graph[e].parents = list(dict.fromkeys(self.controleur.couches_graph[e].parents))
+            ok = self.controleur.couches_graph[e].test_actualiser_enfant(new_id)
+            if e in self.controleur.couches_graph[e].parents:
+                ok = False
+        return ok
+
     def actualiser_enfant(self):
         for e in self.enfant:
             self.controleur.couches_graph[e].parents += self.parents
             self.controleur.couches_graph[e].parents = list(dict.fromkeys(self.controleur.couches_graph[e].parents))
             self.controleur.couches_graph[e].actualiser_enfant()
+            if e in self.controleur.couches_graph[e].parents:
+                raise Exception("Boucle")
     def get_size_parent(self):
         if "Output" in self.__class__.__name__:
             return [0]
@@ -59,14 +74,14 @@ class G_Layer:
             tailles = list(np.array(tailles)+self.couche_deconv-self.couche_pool)
             return tailles
     def get_size_enfant(self):
+        if "Output" in self.__class__.__name__:
+            return [0]
         if len(self.enfant) == 0:
-            return []
+            return [self.couche_deconv-self.couche_pool]
         else:
             tailles = []
             for p in self.enfant:
                 size = self.controleur.couches_graph[p].get_size_enfant()
-                if size == []:
-                    size = [0]
                 tailles += size
             tailles = list(np.array(tailles)+self.couche_deconv-self.couche_pool)
             return tailles
