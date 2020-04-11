@@ -21,6 +21,7 @@ class G_Layer:
         self.couche_id_type = -1
         self.parent = []#parent(s) direct(s) index
         self.parents = []
+        self.tmp_parents = []
         self.enfant = []#directes uniquement                            ******************************Appliquer la fonction d'update et voir si assez d'avoir uniquement les fils directs
         self.taille = None #taille de l'image manipulée
         self.couche_pool = 0#couche courante couche de pooling
@@ -36,6 +37,7 @@ class G_Layer:
         del self.couche_id_type
         del self.parent
         del self.parents
+        del self.tmp_parents
         del self.enfant
         del self.taille
         del self.couche_pool
