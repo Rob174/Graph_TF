@@ -1,6 +1,7 @@
 from graphviz import *
 from graphviz import Digraph
 import numpy as np
+from tensorflow.keras.layers import Concatenate
 
 possibilites_filtres = [1,3,10,50,100,500]
 class G_Layer:
@@ -29,15 +30,31 @@ class G_Layer:
         self.invisible_adapt = False
 
         #Debug graphviz
+    def clean(self):
+        del self.controleur
+        del self.couche_id
+        del self.couche_id_type
+        del self.parent
+        del self.parents
+        del self.enfant
+        del self.taille
+        del self.couche_pool
+        del self.couche_deconv
+        del self.invisible_adapt
+    def actualiser_enfant(self):
+        for e in self.enfant:
+            self.controleur.couches_graph[e].parents += self.parents
+            self.controleur.couches_graph[e].parents = list(dict.fromkeys(self.controleur.couches_graph[e].parents))
+            self.controleur.couches_graph[e].actualiser_enfant()
     def get_size_parent(self):
+        if "Output" in self.__class__.__name__:
+            return [0]
         if len(self.parent) == 0:
-            return []
+            return [self.couche_deconv-self.couche_pool]
         else:
             tailles = []
             for p in self.parent:
                 size = self.controleur.couches_graph[p].get_size_parent()
-                if size == []:
-                    size = [0]
                 tailles += size
             tailles = list(np.array(tailles)+self.couche_deconv-self.couche_pool)
             return tailles
@@ -62,13 +79,12 @@ class G_Layer:
                 if couche.invisible_adapt == False:
                     self.controleur.lier(self.couche_id,i)
     def eval(self):
-            if True not in list(map(lambda x:G_Layer.couches_graph[x].couche_output == None,self.parent)):
+            if self.parent != [] and True not in list(map(lambda x:self.controleur.couches_graph[x].couche_output == None,self.parent)):
                 if len(self.parent) > 1:
-                    L = [G_Layer.couches_graph[i].couche_output for i in self.parent]
-                    self.couche_output = self.couche(Concatenate(axis=-1)(L))
+                    L = [self.controleur.couches_graph[i].couche_output for i in self.parent]
+                    self.couche_output = self.couche(Concatenate(axis=-1)(L)) if "Output" not in self.__class__.__name__ else Concatenate(axis=-1)(L)
                 else:
-                    print("parents : ",self.parent)
-                    self.couche_output = self.couche(G_Layer.couches_graph[self.parent[0]].couche_output)
+                    self.couche_output = self.couche(self.controleur.couches_graph[self.parent[0]].couche_output) if "Output" not in self.__class__.__name__ else self.controleur.couches_graph[self.parent[0]].couche_output
                 return True
             return False
 
@@ -76,8 +92,8 @@ from tensorflow.keras.layers import Conv2D
 
 class G_Conv(G_Layer):
     compteur = 0
-    def __init__(self):
-        super(G_Conv,self).__init__()
+    def __init__(self,controleur):
+        super(G_Conv,self).__init__(controleur)
         self.couche_id_type = G_Conv.compteur
         G_Conv.compteur += 1
         self.filters = self.controleur.hp.Choice('filtre_conv_index_%d'%(self.couche_id_type),possibilites_filtres,default=1)
@@ -90,12 +106,17 @@ class G_Conv(G_Layer):
                              name='Convolution_id_gen_%d_k%d_f%d_activ_%s'%(self.controleur.couche_id,self.filters,self.kernel,self.activ))
         self.controleur.add_couche(self)
         self.controleur.graph.node(str(self.couche_id),shape='record',label="{Conv %d-%d|{{Noyau|%d}|{Filtres|%d}|{Activation|%s}}}"%(self.couche_id,self.couche_id_type,self.kernel,self.filters,self.activ))
+    def clean(self):
+        super(G_Conv,self).clean()
+        del self.filters
+        del self.kernel
+        del self.activ
 
 from tensorflow.keras.layers import MaxPooling2D,AveragePooling2D
 class G_Pool(G_Layer):
     compteur = 0
-    def __init__(self):
-        super(G_Pool,self).__init__()
+    def __init__(self,controleur):
+        super(G_Pool,self).__init__(controleur)
         self.couche_id_type = G_Pool.compteur
         G_Pool.compteur += 1
         self.type_pool = self.controleur.hp.Choice('pool_index_%d'%(self.couche_id_type),['avg','max'],default='max')
@@ -106,13 +127,16 @@ class G_Pool(G_Layer):
             self.couche = AveragePooling2D(pool_size=2,strides=2,padding='VALID',name='AveragePool_id_%d'%(self.couche_id))
         self.controleur.add_couche(self)
         self.controleur.graph.node(str(self.couche_id),shape='record',label="{%spooling %d-%d}"%("Max" if self.type_pool == 'max' else 'Average',self.couche_id,self.couche_id_type))
+    def clean(self):
+        super(G_Pool,self).clean()
+        del self.type_pool
 
 from tensorflow.keras.layers import Input
 import tensorflow as tf
 class G_Input(G_Layer):
-    def __init__(self,hp):
-        super(G_Input,self).__init__()
-        self.controleur.hp = hp
+    def __init__(self,controleur):
+        super(G_Input,self).__init__(controleur)
+        
         self.couche=Input(shape=(256,256,3),dtype=tf.dtypes.float32,name='Entree_env10x256x256x3')
         self.controleur.add_couche(self)
         self.controleur.graph.node(str(self.couche_id),shape='record',label="{Input %d}"%(self.couche_id))
@@ -124,8 +148,8 @@ class G_Input(G_Layer):
 from tensorflow.keras.layers import Conv2DTranspose
 class G_Deconv(G_Layer):
     compteur = 0
-    def __init__(self):
-        super(G_Deconv,self).__init__()
+    def __init__(self,controleur):
+        super(G_Deconv,self).__init__(controleur)
         self.couche_id_type = G_Deconv.compteur
         G_Deconv.compteur += 1
         self.filters = self.controleur.hp.Choice('filtre_conv_index_%d'%(self.couche_id_type),possibilites_filtres,default=1)
@@ -134,10 +158,14 @@ class G_Deconv(G_Layer):
         self.couche_deconv = 1
         self.controleur.add_couche(self)
         self.controleur.graph.node(str(self.couche_id),shape='record',label="{Deconv %d-%d|{{Filtres|%d}|{Activation|%s}}}"%(self.couche_id,self.couche_id_type,self.filters,self.activ))
+    def clean(self):
+        super(G_Deconv,self).clean()
+        del self.filters
+        del self.activ
 
 class G_Output(G_Layer):
-    def __init__(self):
-        super(G_Output,self).__init__()
+    def __init__(self,controleur):
+        super(G_Output,self).__init__(controleur)
         self.invisible_adapt = True
         self.controleur.add_couche(self)
         self.controleur.graph.node(str(self.couche_id),shape='record',label="Output %d"%self.couche_id)
