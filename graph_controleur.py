@@ -9,15 +9,16 @@ import tensorflow as tf
 import os
 from graphviz import *
 from graphviz import Digraph
+from tensorflow.keras import backend as K
 os.system("pip install -U keras-tuner") #De https://github.com/keras-team/keras-tuner
 from kerastuner import BayesianOptimization, Objective
 #from tensorboard.plugins.hparams import api as hp
 
 compteur_model = 0
 
-def custom_accuracy_fct(nb_param,tau=5):
+def custom_accuracy_fct(nb_param,tau=6):
     def custom_accuracy(y_true, y_pred):
-        return K.mean(K.equal(K.argmax(y_true, axis=-1),K.argmax(y_pred, axis=-1))) -(np.tanh(nb_param/tau)+1)/2
+        return K.clip(K.mean(K.equal(K.argmax(y_true, axis=-1),K.argmax(y_pred, axis=-1))) -(np.tanh(nb_param/10**tau)+1)/2,0,1)
     return custom_accuracy
 class G_Controleur:
     def __init__(self,hparam):
@@ -72,7 +73,7 @@ class G_Controleur:
         self.model.compile(optimizer=tf.keras.optimizers.SGD(learning_rate=self.hp.Choice('lr',[1.,0.1,0.01,0.001,10**-4,10**-5],default=0.01),
                                                 momentum=self.hp.Choice('momentum',[1.,0.1,0.01,0.001,10**-4,10**-5,0.],default=0),
                                                 nesterov=False),
-                loss='MSE',metrics=[custom_accuracy_fct(self.model.count_params(),tau=5)])
+                loss='MSE',metrics=[custom_accuracy_fct(self.model.count_params(),tau=6)])
     def clean(self):
         del self.couche_id
         for c in self.couches_graph:
@@ -175,6 +176,8 @@ def create_model(hparam):
     G_Conv.compteur = 0
     global compteur_model
     compteur_model += 1
+    print("Construction")
+    os.system("free -h")
     controleur = G_Controleur(hparam)
     model = controleur.model
     print("Nb param : ",model.count_params())

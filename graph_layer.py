@@ -2,6 +2,7 @@ from graphviz import *
 from graphviz import Digraph
 import numpy as np
 from tensorflow.keras.layers import Concatenate
+from tensorflow.keras import backend as K
 
 possibilites_filtres = [1,3,10,50,100,500]
 class G_Layer:

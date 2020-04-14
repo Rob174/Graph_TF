@@ -45,22 +45,23 @@ from IPython.display import clear_output
 os.system("pip install -U keras-tuner") #De https://github.com/keras-team/keras-tuner
 from kerastuner import BayesianOptimization, Objective
 os.system("clear")
-
+print("START***********************************************************************")
+os.system("free -h")
 tuner = BayesianOptimization(
     create_model,
     objective=Objective("custom_accuracy", direction="max"),
     max_trials=75,
     executions_per_trial=3,
     directory='Bayesian_optimization',
-    project_name='Bayesian_libre_lim_nb_param_tau5'
+    project_name='Bayesian_libre_lim_nb_param_tau6'
 )
 
 dataset_train = ArtificialDataset(nom="Train").map(traitement,num_parallel_calls=tf.data.experimental.AUTOTUNE).cache().prefetch(tf.data.experimental.AUTOTUNE)
 dataset_val = ArtificialDataset(nom="Validation").map(traitement,num_parallel_calls=tf.data.experimental.AUTOTUNE).cache().prefetch(tf.data.experimental.AUTOTUNE)
-"""
+
 tuner.search(dataset_train,
              epochs=5,
              validation_data=dataset_val,
              callbacks=[tf.keras.callbacks.EarlyStopping(min_delta=1e-3)])
-"""
+
 tuner.results_summary(num_trials=2)
