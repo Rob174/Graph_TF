@@ -50,11 +50,13 @@ class G_Layer:
         self.tmp_parents += self.controleur.couches_graph[new_id].parents
         self.tmp_parents = list(dict.fromkeys(self.tmp_parents))
         for e in self.enfant:
-            self.controleur.couches_graph[e].parents += self.parents
-            self.controleur.couches_graph[e].parents = list(dict.fromkeys(self.controleur.couches_graph[e].parents))
+            self.controleur.couches_graph[e].tmp_parents += self.tmp_parents
+            self.controleur.couches_graph[e].tmp_parents = list(dict.fromkeys(self.controleur.couches_graph[e].tmp_parents))
             ok = self.controleur.couches_graph[e].test_actualiser_enfant(new_id)
-            if e in self.controleur.couches_graph[e].parents:
+            if e in self.controleur.couches_graph[e].tmp_parents:
                 ok = False
+            self.controleur.couches_graph[e].tmp_parents = []
+        self.tmp_parents = []
         return ok
 
     def actualiser_enfant(self):
