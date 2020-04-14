@@ -14,6 +14,11 @@ from kerastuner import BayesianOptimization, Objective
 #from tensorboard.plugins.hparams import api as hp
 
 compteur_model = 0
+
+def custom_accuracy_fct(nb_param,tau=5):
+    def custom_accuracy(y_true, y_pred):
+        return K.mean(K.equal(K.argmax(y_true, axis=-1),K.argmax(y_pred, axis=-1))) -(np.tanh(nb_param/tau)+1)/2
+    return custom_accuracy
 class G_Controleur:
     def __init__(self,hparam):
         self.couche_id = 0
@@ -67,7 +72,7 @@ class G_Controleur:
         self.model.compile(optimizer=tf.keras.optimizers.SGD(learning_rate=self.hp.Choice('lr',[1.,0.1,0.01,0.001,10**-4,10**-5],default=0.01),
                                                 momentum=self.hp.Choice('momentum',[1.,0.1,0.01,0.001,10**-4,10**-5,0.],default=0),
                                                 nesterov=False),
-                loss='MSE',metrics=["accuracy"])
+                loss='MSE',metrics=[custom_accuracy_fct(self.model.count_params(),tau=5)])
     def clean(self):
         del self.couche_id
         for c in self.couches_graph:
@@ -164,7 +169,6 @@ class G_Controleur:
             self.couches_graph[couche_id_2].actualiser_enfant()
             self.couches_graph[couche_id_1].enfant.append(self.couches_graph[couche_id_2].couche_id)
 def create_model(hparam):
-    print("Model !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
     G_Conv.compteur = 0
     G_Deconv.compteur = 0
     G_Pool.compteur = 0

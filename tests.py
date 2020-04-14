@@ -48,11 +48,11 @@ os.system("clear")
 
 tuner = BayesianOptimization(
     create_model,
-    objective=Objective("accuracy", direction="max"),
+    objective=Objective("custom_accuracy", direction="max"),
     max_trials=75,
     executions_per_trial=3,
     directory='Bayesian_optimization',
-    project_name='Modele000002_Keras_Bayesian_libre'
+    project_name='Bayesian_libre_lim_nb_param_tau5'
 )
 
 dataset_train = ArtificialDataset(nom="Train").map(traitement,num_parallel_calls=tf.data.experimental.AUTOTUNE).cache().prefetch(tf.data.experimental.AUTOTUNE)
