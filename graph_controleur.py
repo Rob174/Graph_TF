@@ -1,7 +1,7 @@
 import graph_layer
 from graph_layer import *
 from tensorflow.keras.optimizers import SGD, Adam
-from tensorflow.keras.layers import Conv2D, Concatenate
+from tensorflow.keras.layers import Conv2D, Concatenate, Input
 from tensorflow.keras import models
 from tensorflow.keras.models import Model, Sequential
 import tensorflow.keras.losses
