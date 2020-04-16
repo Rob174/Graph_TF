@@ -14,20 +14,16 @@ from kerastuner import BayesianOptimization, Objective
 #from tensorboard.plugins.hparams import api as hp
 
 compteur_model = 0
-
-def custom_accuracy_fct(nb_param,tau=6):
-    def custom_accuracy(y_true, y_pred):
-        return K.mean(K.equal(K.argmax(y_true, axis=-1),K.argmax(y_pred, axis=-1))) -(np.tanh(nb_param/tau)+1)/2
-    return custom_accuracy
+trop_param = False
 class G_Controleur:
     def __init__(self,hparam):
         self.couche_id = 0
         self.couches_graph = []
         self.hp = hparam
         self.graph = Digraph("graph",format='png')
-        self.nb_conv = self.hp.Int("nb_conv",min_value=4,max_value=10)
-        self.nb_deconv = self.hp.Int("nb_deconv",min_value=0,max_value=10)
-        self.nb_pool = self.hp.Int("nb_pool",min_value=0,max_value=10)
+        self.nb_conv = self.hp.Int("nb_conv",min_value=4,max_value=50)
+        self.nb_deconv = self.hp.Int("nb_deconv",min_value=0,max_value=50)
+        self.nb_pool = self.hp.Int("nb_pool",min_value=0,max_value=50)
         G_Input(self)
         for i in range(self.nb_conv):
             G_Conv(self)
@@ -72,7 +68,24 @@ class G_Controleur:
         self.model.compile(optimizer=tf.keras.optimizers.SGD(learning_rate=self.hp.Choice('lr',[1.,0.1,0.01,0.001,10**-4,10**-5],default=0.01),
                                                 momentum=self.hp.Choice('momentum',[1.,0.1,0.01,0.001,10**-4,10**-5,0.],default=0),
                                                 nesterov=False),
-                loss='MSE',metrics=[custom_accuracy_fct(self.model.count_params(),tau=6)])
+                loss='MSE',metrics=["accuracy"])
+        max_param = int('inf')
+        if os.path.isfile("/content/Graph_TF/max_param.txt") == True:
+            with open("/content/Graph_TF/max_param.txt","r") as f:
+                for i,l in enumerate(f):
+                    if i == 0:
+                        max_param = int(l.strip())
+                    elif i  == 1:
+                        retour_ancienne_exec = int(l.strip())
+                        max_param = max_param if max_param < retour_ancienne_exec else retour_ancienne_exec
+        if self.model.count_params() >= max_param:
+            print("Trop de parametre avec %d pour ce modèle et précédement échec avec %d"%(self.model.count_params(),max_param))
+            global trop_param
+            trop_param = False
+            return
+        with open("/content/Graph_TF/max_param.txt","w") as f:
+            f.write(str(max_param)+"\n")
+            f.write(str(self.model.count_params())+"\n")
     def clean(self):
         del self.couche_id
         for c in self.couches_graph:
@@ -180,4 +193,14 @@ def create_model(hparam):
     print("Nb param : ",model.count_params())
     controleur.clean()
     del controleur
+    global trop_param
+    if trop_param == True:
+        inpt = Input(shape=(256,256,3),dtype=tf.dtypes.float32,name='Entree_env10x256x256x3')
+        outpt = tf.keras.layers.GaussianNoise(5)(inpt)
+        try:
+            del model
+        except:
+            pass
+        model = Model(inputs=inpt,outputs=outpt,name='Model_invalide')
+        trop_param = False
     return model

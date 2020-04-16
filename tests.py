@@ -48,23 +48,9 @@ os.system("clear")
 print("START***********************************************************************")
 os.system("free -h")
 
-import tensorflow as tf
-print("Tensorflow version " + tf.__version__)
-
-try:
-  tpu = tf.distribute.cluster_resolver.TPUClusterResolver()  # TPU detection
-  print('Running on TPU ', tpu.cluster_spec().as_dict()['worker'])
-except ValueError:
-  raise BaseException('ERROR: Not connected to a TPU runtime; please see the previous cell in this notebook for instructions!')
-
-tf.config.experimental_connect_to_cluster(tpu)
-tf.tpu.experimental.initialize_tpu_system(tpu)
-tpu_strategy = tf.distribute.experimental.TPUStrategy(tpu)
-
-
 tuner = BayesianOptimization(
     create_model,
-    objective=Objective("custom_accuracy", direction="max"),
+    objective=Objective("accuracy", direction="max"),
     max_trials=75,
     executions_per_trial=3,
     directory='Bayesian_optimization',
