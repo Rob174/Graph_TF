@@ -203,5 +203,9 @@ def create_model(hparam):
         except:
             pass
         model = Model(inputs=inpt,outputs=outpt,name='Model_invalide')
+        model.compile(optimizer=tf.keras.optimizers.SGD(learning_rate=1,
+                                                momentum=0,
+                                                nesterov=False),
+                    loss='MSE',metrics=["accuracy"])
         trop_param = False
     return model
