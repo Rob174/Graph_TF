@@ -1,6 +1,5 @@
 import graph_layer
 from graph_layer import *
-import tensorflow as tf
 from tensorflow.keras.optimizers import SGD, Adam
 from tensorflow.keras.layers import Conv2D, Concatenate
 from tensorflow.keras import models
@@ -10,17 +9,15 @@ import tensorflow as tf
 import os
 from graphviz import *
 from graphviz import Digraph
-from tensorflow.keras import backend as K
 os.system("pip install -U keras-tuner") #De https://github.com/keras-team/keras-tuner
 from kerastuner import BayesianOptimization, Objective
-import subprocess
 #from tensorboard.plugins.hparams import api as hp
 
 compteur_model = 0
 
 def custom_accuracy_fct(nb_param,tau=6):
     def custom_accuracy(y_true, y_pred):
-        return K.clip(K.mean(K.equal(K.argmax(y_true, axis=-1),K.argmax(y_pred, axis=-1))) -(np.tanh(nb_param/10**tau)+1)/2,0,1)
+        return K.mean(K.equal(K.argmax(y_true, axis=-1),K.argmax(y_pred, axis=-1))) -(np.tanh(nb_param/tau)+1)/2
     return custom_accuracy
 class G_Controleur:
     def __init__(self,hparam):
@@ -47,11 +44,7 @@ class G_Controleur:
         #On fournit l'input aux noeuds racines
         for i,n in enumerate(self.couches_graph):
             if len(n.parent)==0:
-                res = subprocess.run("free | grep Mem | awk '{print $4/$2 * 100.0}'", stdout=subprocess.PIPE,shell=True).stdout.decode("utf-8").strip()
-                print(res,"prct libres")
-                if float(res)<10:
-                    break_p = 0
-                #print("Liaison théorique entre %d et %d"%(self.couches_graph[0].couche_id,n.couche_id))
+                print("Liaison théorique entre %d et %d"%(self.couches_graph[0].couche_id,n.couche_id))
                 self.lier(self.couches_graph[0].couche_id,n.couche_id,forcer=True)
                 n.couche_input = self.couches_graph[0].couche
         self.afficher("ajout_input")
@@ -112,7 +105,6 @@ class G_Controleur:
         verifications_ok = couche_id_1 != couche_id_2 and "Output" not in self.couches_graph[couche_id_1].__class__.__name__#Ce n'est pas la couche courante
         verifications_ok = verifications_ok and "Input" not in self.couches_graph[couche_id_2].__class__.__name__
         verifications_ok = verifications_ok and couche_id_2 not in self.couches_graph[couche_id_1].parents#Ce n'est pas un parent de la couche mère
-
         if verifications_ok == False:
             return
         #Calcul de la difference de taille
@@ -132,13 +124,11 @@ class G_Controleur:
         if taille_si_lie < -8:#Si on a trop de couches de pooling si on liait les deux couches
             lier = False
             return
-        
         verif_boucle = self.couches_graph[couche_id_2].test_actualiser_enfant(couche_id_1)
         if verif_boucle == False:
             return
         #Vérifie si les tailles sont compatibles
         verification_taille = False
-
         if len(self.couches_graph[couche_id_1].parent) == 0:
             verification_taille = True
         elif len(self.couches_graph[couche_id_2].parent) == 0 and len(self.couches_graph[couche_id_2].enfant)==0:
@@ -164,7 +154,6 @@ class G_Controleur:
                 self.lier(self.couches_graph[couche_adapt.couche_id].couche_id,self.couches_graph[couche_id_2].couche_id)
                 return 
         test_boucle = self.couches_graph[couche_id_2].test_actualiser_enfant(couche_id_1)
-
         if test_boucle == False:
             return
         choix_lien = False
@@ -179,25 +168,13 @@ class G_Controleur:
             self.couches_graph[couche_id_2].parents = list(dict.fromkeys(self.couches_graph[couche_id_2].parents))
             self.couches_graph[couche_id_2].actualiser_enfant()
             self.couches_graph[couche_id_1].enfant.append(self.couches_graph[couche_id_2].couche_id)
-
-
-import multiprocessing
 def create_model(hparam):
-    arguments = ','.join(hparam)
-    p = multiprocessing.Process(target=run,args=())
-    p.start()
-    p.join()
-def run(hparam):
-    hparam = hparam.split(",")
-    tf.keras.backend.clear_session()
     G_Conv.compteur = 0
     G_Deconv.compteur = 0
     G_Pool.compteur = 0
     G_Conv.compteur = 0
     global compteur_model
     compteur_model += 1
-    print("Construction")
-    os.system("free -h")
     controleur = G_Controleur(hparam)
     model = controleur.model
     print("Nb param : ",model.count_params())
