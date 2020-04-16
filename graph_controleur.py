@@ -69,7 +69,7 @@ class G_Controleur:
                                                 momentum=self.hp.Choice('momentum',[1.,0.1,0.01,0.001,10**-4,10**-5,0.],default=0),
                                                 nesterov=False),
                 loss='MSE',metrics=["accuracy"])
-        max_param = int('inf')
+        max_param = -1
         if os.path.isfile("/content/Graph_TF/max_param.txt") == True:
             with open("/content/Graph_TF/max_param.txt","r") as f:
                 for i,l in enumerate(f):
@@ -77,11 +77,12 @@ class G_Controleur:
                         max_param = int(l.strip())
                     elif i  == 1:
                         retour_ancienne_exec = int(l.strip())
-                        max_param = max_param if max_param < retour_ancienne_exec else retour_ancienne_exec
-        if self.model.count_params() >= max_param:
-            print("Trop de parametre avec %d pour ce modèle et précédement échec avec %d"%(self.model.count_params(),max_param))
+                        max_param = max_param if (max_param==-1 or max_param < retour_ancienne_exec) else retour_ancienne_exec
+        
+        if self.model.count_params() >= max_param or type(max_param)==bool:
+            print("Trop de parametre avec %d pour ce modèle et précédement échec avec %d (-1 = infini)"%(self.model.count_params(),max_param))
             global trop_param
-            trop_param = False
+            trop_param = True
             return
         with open("/content/Graph_TF/max_param.txt","w") as f:
             f.write(str(max_param)+"\n")
