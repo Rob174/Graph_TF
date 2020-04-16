@@ -1,3 +1,7 @@
+
+## Tensorflow keras
+os.system("pip install -q tf-nightly")
+os.system("pip install -U keras-tuner") #De https://github.com/keras-team/keras-tuner
 from graph_layer import *
 from graph_controleur import *
 from graphviz import *
@@ -7,14 +11,11 @@ from tensorflow.keras.layers import Conv2D
 from tensorflow.keras import models
 from tensorflow.keras.models import Model, Sequential
 import tensorflow.keras.losses
-import tensorflow as tf
 import os
 ##Python / Colab
 from google.colab import files
 from google.colab import drive
 import os
-## Tensorflow keras
-os.system("pip install -q tf-nightly")
 # clear_output()
 import tensorflow as tf
 from tensorflow.keras import backend as K
@@ -42,11 +43,25 @@ import time
 #Debugage
 from IPython.display import clear_output
 #Hyperparameters tuning
-os.system("pip install -U keras-tuner") #De https://github.com/keras-team/keras-tuner
 from kerastuner import BayesianOptimization, Objective
 os.system("clear")
 print("START***********************************************************************")
 os.system("free -h")
+
+import tensorflow as tf
+print("Tensorflow version " + tf.__version__)
+
+try:
+  tpu = tf.distribute.cluster_resolver.TPUClusterResolver()  # TPU detection
+  print('Running on TPU ', tpu.cluster_spec().as_dict()['worker'])
+except ValueError:
+  raise BaseException('ERROR: Not connected to a TPU runtime; please see the previous cell in this notebook for instructions!')
+
+tf.config.experimental_connect_to_cluster(tpu)
+tf.tpu.experimental.initialize_tpu_system(tpu)
+tpu_strategy = tf.distribute.experimental.TPUStrategy(tpu)
+
+
 tuner = BayesianOptimization(
     create_model,
     objective=Objective("custom_accuracy", direction="max"),
