@@ -16,6 +16,7 @@ from kerastuner import BayesianOptimization, Objective
 compteur_model = 0
 trop_param = False
 class G_Controleur:
+    prec_echec = True
     def __init__(self,hparam):
         self.couche_id = 0
         self.couches_graph = []
@@ -77,8 +78,10 @@ class G_Controleur:
                     if i == 0:
                         max_param = int(l.strip())
                     elif i  == 1:
-                        retour_ancienne_exec = int(l.strip())
-                        max_param = max_param if (max_param==-1 or max_param < retour_ancienne_exec) else retour_ancienne_exec
+                        prec_echec = l.strip()
+                        retour_ancienne_exec = int(prec_echec)
+                        max_param = retour_ancienne_exec if (max_param==-1 and max_param < retour_ancienne_exec) and G_Controleur.prec_echec == True else max_param
+                        G_Controleur.prec_echec = False
         
         if (self.model.count_params() >= max_param and max_param !=-1):
             print("Trop de parametre avec %d pour ce modèle et précédement échec avec %d (-1 = infini)"%(self.model.count_params(),max_param))
