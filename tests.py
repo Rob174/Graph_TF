@@ -54,7 +54,7 @@ tuner = BayesianOptimization(
     max_trials=75,
     executions_per_trial=3,
     directory='Bayesian_optimization',
-    project_name='Bayesian_libre_lim_nb_param_tau6'
+    project_name='Bayesian_libre_test'
 )
 
 dataset_train = ArtificialDataset(nom="Train").map(traitement,num_parallel_calls=tf.data.experimental.AUTOTUNE).cache().prefetch(tf.data.experimental.AUTOTUNE)

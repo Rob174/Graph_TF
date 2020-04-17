@@ -19,11 +19,12 @@ class G_Controleur:
     def __init__(self,hparam):
         self.couche_id = 0
         self.couches_graph = []
+        self.nb_liens = 0
         self.hp = hparam
         self.graph = Digraph("graph",format='png')
-        self.nb_conv = self.hp.Int("nb_conv",min_value=4,max_value=50)
-        self.nb_deconv = self.hp.Int("nb_deconv",min_value=0,max_value=50)
-        self.nb_pool = self.hp.Int("nb_pool",min_value=0,max_value=50)
+        self.nb_conv = self.hp.Int("nb_conv",min_value=4,max_value=20)
+        self.nb_deconv = self.hp.Int("nb_deconv",min_value=0,max_value=5)
+        self.nb_pool = self.hp.Int("nb_pool",min_value=0,max_value=5)
         G_Input(self)
         for i in range(self.nb_conv):
             G_Conv(self)
@@ -79,7 +80,7 @@ class G_Controleur:
                         retour_ancienne_exec = int(l.strip())
                         max_param = max_param if (max_param==-1 or max_param < retour_ancienne_exec) else retour_ancienne_exec
         
-        if self.model.count_params() >= max_param or type(max_param)==bool:
+        if (self.model.count_params() >= max_param and max_param !=-1):
             print("Trop de parametre avec %d pour ce modèle et précédement échec avec %d (-1 = infini)"%(self.model.count_params(),max_param))
             global trop_param
             trop_param = True
@@ -89,6 +90,7 @@ class G_Controleur:
             f.write(str(self.model.count_params())+"\n")
     def clean(self):
         del self.couche_id
+        del self.nb_liens
         for c in self.couches_graph:
             c.clean()
         del self.graph
@@ -112,8 +114,11 @@ class G_Controleur:
     def add_couche(self,couche):
         self.couches_graph.append(couche)
     def afficher(self,name):
+        print("%d noeuds et %d liens contre %d au max soit %f prct et %d lien par noeud en moyenne"%(len(self.couches_graph),self.nb_liens,len(self.couches_graph)*(len(self.couches_graph)-1),10**-2*int(10000*self.nb_liens/(len(self.couches_graph)*(len(self.couches_graph)-1))),self.nb_liens/len(self.couches_graph)))
         self.graph.render("./graph_%s"%name)
-    def lier(self,couche_id_1,couche_id_2,forcer=False):
+    def lier(self,couche_id_1,couche_id_2,forcer=False,adapt=False):
+        if adapt == False and ((self.couches_graph[couche_id_1].invisible_adapt == True  and "Output" not in self.couches_graph[couche_id_1].__class__.__name__) or (self.couches_graph[couche_id_2].invisible_adapt == True and "Output" not in self.couches_graph[couche_id_2].__class__.__name__)):
+            return
         lien = False
         #Vérifications
         verifications_ok = couche_id_1 != couche_id_2 and "Output" not in self.couches_graph[couche_id_1].__class__.__name__#Ce n'est pas la couche courante
@@ -124,9 +129,9 @@ class G_Controleur:
         #Calcul de la difference de taille
         #nb de réduction de taille (pool = -1 ; deconv = +1) : dimension < 0 => réduit globalement la taille
         
-        tailles_source = self.couches_graph[couche_id_1].get_size_parent()
-        tailles_dest_enfants = self.couches_graph[couche_id_2].get_size_enfant()
-        tailles_dest_parents = self.couches_graph[couche_id_2].get_size_parent()
+        tailles_source,parents_1 = self.couches_graph[couche_id_1].get_size_parent_list_parents()
+        tailles_dest_enfants,enfants_2 = self.couches_graph[couche_id_2].get_size_enfant_list_enfants()
+        tailles_dest_parents,parents_2 = self.couches_graph[couche_id_2].get_size_parent_list_parents()
         #Le chemin jusqu'à la racine côté couche courante et le chemin jusqu'aux feuilles n'a pas trop de couche de pooling au total
         #Si les dimensions de sortie du layer courant et celles d'entrée du layer cibles coincident
         taille_si_lie = 0
@@ -138,9 +143,15 @@ class G_Controleur:
         if taille_si_lie < -8:#Si on a trop de couches de pooling si on liait les deux couches
             lier = False
             return
+        self.couches_graph[couche_id_2].tmp_parents = self.couches_graph[couche_id_2].parents
+        self.couches_graph[couche_id_2].tmp_parents.append(self.couches_graph[couche_id_1].couche_id)
+        self.couches_graph[couche_id_2].tmp_parents = list(dict.fromkeys(self.couches_graph[couche_id_2].parents))
         verif_boucle = self.couches_graph[couche_id_2].test_actualiser_enfant(couche_id_1)
         if verif_boucle == False:
             return
+        # for e in enfants_2:
+        #     if e in parents_1:
+        #         return
         #Vérifie si les tailles sont compatibles
         verification_taille = False
         if len(self.couches_graph[couche_id_1].parent) == 0:
@@ -153,19 +164,20 @@ class G_Controleur:
                 verification_taille = True
             else:
                 couche_adapt = self.couches_graph[couche_id_1]
+                self.afficher("breakpoint_diff_taille")
                 if diff_taille > 0:
                     for i in range(diff_taille):
                         adapt = graph_layer.G_Pool(self)
                         self.couches_graph[adapt.couche_id].invisible_adapt = True
-                        self.lier(couche_adapt.couche_id,self.couches_graph[adapt.couche_id].couche_id,forcer=True)
+                        self.lier(couche_adapt.couche_id,self.couches_graph[adapt.couche_id].couche_id,forcer=True,adapt=True)
                         couche_adapt = self.couches_graph[adapt.couche_id]
                 else:
                     for i in range(-diff_taille):
                         adapt = graph_layer.G_Deconv(self)
                         self.couches_graph[adapt.couche_id].invisible_adapt = True
-                        self.lier(couche_adapt.couche_id,self.couches_graph[adapt.couche_id].couche_id,forcer=True)
+                        self.lier(couche_adapt.couche_id,self.couches_graph[adapt.couche_id].couche_id,forcer=True,adapt=True)
                         couche_adapt = self.couches_graph[adapt.couche_id]
-                self.lier(self.couches_graph[couche_adapt.couche_id].couche_id,self.couches_graph[couche_id_2].couche_id)
+                self.lier(self.couches_graph[couche_adapt.couche_id].couche_id,self.couches_graph[couche_id_2].couche_id,adapt=True,forcer=True)
                 return 
         test_boucle = self.couches_graph[couche_id_2].test_actualiser_enfant(couche_id_1)
         if test_boucle == False:
@@ -175,7 +187,13 @@ class G_Controleur:
             choix_lien = self.hp.Choice("lien_%s%d_%s%d"%(self.couches_graph[couche_id_1].__class__.__name__,self.couches_graph[couche_id_1].couche_id_type,self.couches_graph[couche_id_2].__class__.__name__,self.couches_graph[couche_id_2].couche_id_type),[True,False],default=False) 
         else:
             choix_lien = True
+        if couche_id_2 == 3:
+            break_pt2 = -2
+        if couche_id_1 == 4 and couche_id_2 == 1:
+            self.afficher("breakpoint")
+            break_pt = -1
         if verification_taille==True and choix_lien == True:
+            self.nb_liens += 1
             self.graph.edge(str(self.couches_graph[couche_id_1].couche_id),str(self.couches_graph[couche_id_2].couche_id))
             self.couches_graph[couche_id_2].parent.append(self.couches_graph[couche_id_1].couche_id)
             self.couches_graph[couche_id_2].parents.append(self.couches_graph[couche_id_1].couche_id)

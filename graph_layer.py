@@ -46,15 +46,13 @@ class G_Layer:
         del self.invisible_adapt
     def test_actualiser_enfant(self,new_id):
         ok = True
-        self.tmp_parents.append(new_id)
-        self.tmp_parents += self.controleur.couches_graph[new_id].parents
-        self.tmp_parents = list(dict.fromkeys(self.tmp_parents))
         for e in self.enfant:
-            self.controleur.couches_graph[e].tmp_parents += self.tmp_parents
+            self.controleur.couches_graph[e].tmp_parents += self.tmp_parents + self.parents
             self.controleur.couches_graph[e].tmp_parents = list(dict.fromkeys(self.controleur.couches_graph[e].tmp_parents))
-            ok = self.controleur.couches_graph[e].test_actualiser_enfant(new_id)
+            if self.controleur.couches_graph[e].test_actualiser_enfant(new_id) == False:
+                return False
             if e in self.controleur.couches_graph[e].tmp_parents:
-                ok = False
+                return False
             self.controleur.couches_graph[e].tmp_parents = []
         self.tmp_parents = []
         return ok
@@ -65,31 +63,38 @@ class G_Layer:
             self.controleur.couches_graph[e].parents = list(dict.fromkeys(self.controleur.couches_graph[e].parents))
             self.controleur.couches_graph[e].actualiser_enfant()
             if e in self.controleur.couches_graph[e].parents:
+                self.controleur.afficher("Boucle")
                 raise Exception("Boucle")
-    def get_size_parent(self):
+    def get_size_parent_list_parents(self):
         if "Output" in self.__class__.__name__:
-            return [0]
+            return [0],[self.couche_id]
         if len(self.parent) == 0:
-            return [self.couche_deconv-self.couche_pool]
+            return [self.couche_deconv-self.couche_pool],[self.couche_id]
         else:
             tailles = []
+            parents = []
             for p in self.parent:
-                size = self.controleur.couches_graph[p].get_size_parent()
+                size,parents_p = self.controleur.couches_graph[p].get_size_parent_list_parents()
                 tailles += size
+                parents += parents_p
+                parents = list(dict.fromkeys(parents))
             tailles = list(np.array(tailles)+self.couche_deconv-self.couche_pool)
-            return tailles
-    def get_size_enfant(self):
+            return tailles,parents
+    def get_size_enfant_list_enfants(self):
         if "Output" in self.__class__.__name__:
-            return [0]
+            return [0],[self.couche_id]
         if len(self.enfant) == 0:
-            return [self.couche_deconv-self.couche_pool]
+            return [self.couche_deconv-self.couche_pool],[self.couche_id]
         else:
             tailles = []
+            enfants = []
             for p in self.enfant:
-                size = self.controleur.couches_graph[p].get_size_enfant()
+                size,enfants_p = self.controleur.couches_graph[p].get_size_enfant_list_enfants()
                 tailles += size
+                enfants += enfants_p
+                enfants = list(dict.fromkeys(enfants))
             tailles = list(np.array(tailles)+self.couche_deconv-self.couche_pool)
-            return tailles
+            return tailles,enfants
 
     def link(self):
         #Uniformisation du nb de couches de pooling
@@ -125,7 +130,7 @@ class G_Conv(G_Layer):
                              activation=self.activ,
                              name='Convolution_id_gen_%d_k%d_f%d_activ_%s'%(self.controleur.couche_id,self.filters,self.kernel,self.activ))
         self.controleur.add_couche(self)
-        self.controleur.graph.node(str(self.couche_id),shape='record',label="{Conv %d-%d|{{Noyau|%d}|{Filtres|%d}|{Activation|%s}}}"%(self.couche_id,self.couche_id_type,self.kernel,self.filters,self.activ))
+        self.controleur.graph.node(str(self.couche_id),shape='record',color='red',label="{Conv %d-%d|{{Noyau|%d}|{Filtres|%d}|{Activation|%s}}}"%(self.couche_id,self.couche_id_type,self.kernel,self.filters,self.activ))
     def clean(self):
         super(G_Conv,self).clean()
         del self.filters
@@ -146,7 +151,7 @@ class G_Pool(G_Layer):
         else:
             self.couche = AveragePooling2D(pool_size=2,strides=2,padding='VALID',name='AveragePool_id_%d'%(self.couche_id))
         self.controleur.add_couche(self)
-        self.controleur.graph.node(str(self.couche_id),shape='record',label="{%spooling %d-%d}"%("Max" if self.type_pool == 'max' else 'Average',self.couche_id,self.couche_id_type))
+        self.controleur.graph.node(str(self.couche_id),shape='record',color='green',label="{%spooling %d-%d}"%("Max" if self.type_pool == 'max' else 'Average',self.couche_id,self.couche_id_type))
     def clean(self):
         super(G_Pool,self).clean()
         del self.type_pool
@@ -177,7 +182,7 @@ class G_Deconv(G_Layer):
         self.couche = Conv2DTranspose(filters=self.filters,kernel_size=2,strides=2,name='TransposedConv_Deconv_id_%d_f%d'%(self.couche_id,self.filters))
         self.couche_deconv = 1
         self.controleur.add_couche(self)
-        self.controleur.graph.node(str(self.couche_id),shape='record',label="{Deconv %d-%d|{{Filtres|%d}|{Activation|%s}}}"%(self.couche_id,self.couche_id_type,self.filters,self.activ))
+        self.controleur.graph.node(str(self.couche_id),shape='record',color='blue',label="{Deconv %d-%d|{{Filtres|%d}|{Activation|%s}}}"%(self.couche_id,self.couche_id_type,self.filters,self.activ))
     def clean(self):
         super(G_Deconv,self).clean()
         del self.filters
