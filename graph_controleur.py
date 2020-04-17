@@ -164,7 +164,6 @@ class G_Controleur:
                 verification_taille = True
             else:
                 couche_adapt = self.couches_graph[couche_id_1]
-                self.afficher("breakpoint_diff_taille")
                 if diff_taille > 0:
                     for i in range(diff_taille):
                         adapt = graph_layer.G_Pool(self)
