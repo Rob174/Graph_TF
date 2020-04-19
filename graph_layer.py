@@ -1,7 +1,7 @@
 from graphviz import *
 from graphviz import Digraph
 import numpy as np
-from tensorflow.keras.layers import Concatenate
+from tensorflow.keras.layers import Concatenate,Add
 from tensorflow.keras import backend as K
 
 possibilites_filtres = [1,3,10,50,100,500]
@@ -32,6 +32,25 @@ class G_Layer:
         self.invisible_adapt = False
 
         #Debug graphviz
+    def add_regularizer(self,type_couche):
+        self.kernel_reg_choix = self.controleur.hp.Choice("kernel_reg_choix_%s_index_%d"%(type_couche,self.couche_id_type),[True,False],default=False)
+        self.bias_reg_choix = self.controleur.hp.Choice("bias_reg_choix_%s_index_%d"%(type_couche,self.couche_id_type),[True,False],default=False)
+        self.activation_reg_choix = self.controleur.hp.Choice("activation_reg_choix_%s_index_%d"%(type_couche,self.couche_id_type),[True,False],default=False)
+        self.kernel_reg = None
+        self.bias_reg = None
+        self.activation_reg = None
+        if self.kernel_reg_choix == True:
+            self.kernel_reg_l1 = self.controleur.hp.Float("l1_kernel_%s_index_%d"%(type_couche,self.couche_id_type),min_value=0,max_value=10,default=0)
+            self.kernel_reg_l2 = self.controleur.hp.Float("l2_kernel_%s_index_%d"%(type_couche,self.couche_id_type),min_value=0,max_value=10,default=0)
+            self.kernel_reg = tf.keras.regularizers.L1L2(l1=self.kernel_reg_l1,l2=self.kernel_reg_l2)
+        if self.bias_reg_choix == True:
+            self.bias_reg_l1 = self.controleur.hp.Float("l1_bias_%s_index_%d"%(type_couche,self.couche_id_type),min_value=0,max_value=10,default=0)
+            self.bias_reg_l2 = self.controleur.hp.Float("l2_bias_%s_index_%d"%(type_couche,self.couche_id_type),min_value=0,max_value=10,default=0)
+            self.bias_reg = tf.keras.regularizers.L1L2(l1=self.bias_reg_l1,l2=self.bias_reg_l2)
+        if self.activation_reg_choix == True:
+            self.activation_reg_l1 = self.controleur.hp.Float("l1_activation_%s_index_%d"%(type_couche,self.couche_id_type),min_value=0,max_value=10,default=0)
+            self.activation_reg_l2 = self.controleur.hp.Float("l2_activation_%s_index_%d"%(type_couche,self.couche_id_type),min_value=0,max_value=10,default=0)
+            self.activation_reg = tf.keras.regularizers.L1L2(l1=self.activation_reg_l1,l2=self.activation_reg_l2)
     def clean(self):
         del self.controleur
         del self.couche_id
@@ -124,13 +143,17 @@ class G_Conv(G_Layer):
         self.filters = self.controleur.hp.Choice('filtre_conv_index_%d'%(self.couche_id_type),possibilites_filtres,default=1)
         self.kernel = self.controleur.hp.Choice('kernel_conv_index_%d'%(self.couche_id_type),[2,3],default=2)
         self.activ = self.controleur.hp.Choice("activation_conv_index_%d"%(self.couche_id_type),['linear','relu','elu','selu','tanh'],default='relu')
+        self.add_regularizer('conv')
         self.couche = Conv2D(filters=self.filters,
                              kernel_size=self.kernel,
                              padding='SAME',
                              activation=self.activ,
-                             name='Convolution_id_gen_%d_k%d_f%d_activ_%s'%(self.controleur.couche_id,self.filters,self.kernel,self.activ))
+                             name='Convolution_id_gen_%d_k%d_f%d_activ_%s'%(self.controleur.couche_id,self.filters,self.kernel,self.activ),
+                             kernel_regularizer=self.kernel_reg,
+                             bias_regularizer=self.bias_reg,
+                             activity_regularizer=self.activation_reg)
         self.controleur.add_couche(self)
-        self.controleur.graph.node(str(self.couche_id),shape='record',color='red',label="{Conv %d-%d|{{Noyau|%d}|{Filtres|%d}|{Activation|%s}}}"%(self.couche_id,self.couche_id_type,self.kernel,self.filters,self.activ))
+        self.controleur.graph.node(str(self.couche_id),shape='record',color='red',label="{Conv %d-%d|{{Noyau|%d}|{Filtres|%d}|{Activation|%s}|{Kernel l1|%s}|{Kernel l2|%s}|{Bias l1|%s}|{Bias l2|%s}|{Activation l1|%s}|{Activation l2|%s}}}"%(self.couche_id,self.couche_id_type,self.kernel,self.filters,self.activ,"/" if self.kernel_reg_choix == False else self.kernel_reg_l1,"/" if self.kernel_reg_choix == False else self.kernel_reg_l2,"/" if self.bias_reg_choix == False else self.bias_reg_l1,"/" if self.bias_reg_choix == False else self.bias_reg_l2,"/" if self.activation_reg_choix == False else self.activation_reg_l1,"/" if self.activation_reg_choix == False else self.activation_reg_l2))
     def clean(self):
         super(G_Conv,self).clean()
         del self.filters
@@ -179,15 +202,42 @@ class G_Deconv(G_Layer):
         G_Deconv.compteur += 1
         self.filters = self.controleur.hp.Choice('filtre_conv_index_%d'%(self.couche_id_type),possibilites_filtres,default=1)
         self.activ = self.controleur.hp.Choice("activation_conv_index_%d"%(self.couche_id_type),['linear','relu','elu','selu','tanh'],default='relu')
-        self.couche = Conv2DTranspose(filters=self.filters,kernel_size=2,strides=2,name='TransposedConv_Deconv_id_%d_f%d'%(self.couche_id,self.filters))
+        self.add_regularizer('deconv')
+        self.couche = Conv2DTranspose(filters=self.filters,
+                                      kernel_size=2,
+                                      strides=2,
+                                      name='TransposedConv_Deconv_id_%d_f%d'%(self.couche_id,self.filters),
+                                      kernel_regularizer=self.kernel_reg,
+                                      bias_regularizer=self.bias_reg,
+                                      activity_regularizer=self.activation_reg)
         self.couche_deconv = 1
+        
         self.controleur.add_couche(self)
-        self.controleur.graph.node(str(self.couche_id),shape='record',color='blue',label="{Deconv %d-%d|{{Filtres|%d}|{Activation|%s}}}"%(self.couche_id,self.couche_id_type,self.filters,self.activ))
+        self.controleur.graph.node(str(self.couche_id),shape='record',color='blue',label="{Deconv %d-%d|{{Filtres|%d}|{Activation|%s}|{Kernel l1|%s}|{Kernel l2|%s}|{Bias l1|%s}|{Bias l2|%s}|{Activation l1|%s}|{Activation l2|%s}}}"%(self.couche_id,self.couche_id_type,self.filters,self.activ,"/" if self.kernel_reg_choix == False else self.kernel_reg_l1,"/" if self.kernel_reg_choix == False else self.kernel_reg_l2,"/" if self.bias_reg_choix == False else self.bias_reg_l1,"/" if self.bias_reg_choix == False else self.bias_reg_l2,"/" if self.activation_reg_choix == False else self.activation_reg_l1,"/" if self.activation_reg_choix == False else self.activation_reg_l2))
     def clean(self):
         super(G_Deconv,self).clean()
         del self.filters
         del self.activ
-
+class G_Add(G_Layer):
+    compteur = 0
+    def __init__(self,controleur):
+        super(G_Add,self).__init__(controleur)
+        self.couche_id_type = G_Add.compteur
+        G_Add.compteur += 1
+        self.couche = Add(name='Add_id_%d'%(self.couche_id))
+        self.controleur.add_couche(self)
+        self.controleur.graph.node(str(self.couche_id),shape='record',color='blue',label="{Add %d-%d}"%(self.couche_id,self.couche_id_type))
+    def clean(self):
+        super(G_Add,self).clean()
+    def eval(self):
+            if self.parent != [] and True not in list(map(lambda x:self.controleur.couches_graph[x].couche_output == None,self.parent)):
+                if len(self.parent) > 1:
+                    L = [self.controleur.couches_graph[i].couche_output for i in self.parent]
+                    self.couche_output = self.couche(L)
+                else:
+                    self.couche_output = self.couche([self.controleur.couches_graph[self.parent[0]].couche_output,self.controleur.couches_graph[self.parent[0]].couche_output])#Si la couche add n'a qu'une entrée on double celle-ci pour éviter l'erreur
+                return True
+            return False
 class G_Output(G_Layer):
     def __init__(self,controleur):
         super(G_Output,self).__init__(controleur)

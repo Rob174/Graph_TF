@@ -26,6 +26,7 @@ class G_Controleur:
         self.nb_conv = self.hp.Int("nb_conv",min_value=4,max_value=20)
         self.nb_deconv = self.hp.Int("nb_deconv",min_value=0,max_value=5)
         self.nb_pool = self.hp.Int("nb_pool",min_value=0,max_value=5)
+        self.nb_add = self.hp.Int("nb_add",min_value=0,max_value=30)
         G_Input(self)
         for i in range(self.nb_conv):
             G_Conv(self)
@@ -33,6 +34,8 @@ class G_Controleur:
             G_Deconv(self)
         for i in range(self.nb_pool):
             G_Pool(self)
+        for i in range(self.nb_add):
+            G_Add(self)
         G_Output(self)
         self.couches_graph[0].eval()
         self.lier(0,1,forcer=True)

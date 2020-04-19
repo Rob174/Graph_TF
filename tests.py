@@ -2,6 +2,9 @@ import os
 ## Tensorflow keras
 os.system("pip install -q tf-nightly")
 os.system("pip install -U keras-tuner") #De https://github.com/keras-team/keras-tuner
+os.system("cd '/content/drive/My Drive/TIPE'")
+import sys
+sys.path.append('/content/Graph_TF')
 from graph_layer import *
 from graph_controleur import *
 from graphviz import *
@@ -51,10 +54,10 @@ os.system("free -h")
 tuner = BayesianOptimization(
     create_model,
     objective=Objective("accuracy", direction="max"),
-    max_trials=75,
-    executions_per_trial=3,
+    max_trials=500,
+    executions_per_trial=5,
     directory='Bayesian_optimization',
-    project_name='Bayesian_libre_test'
+    project_name='Bayesian_libre_50conv_5deconv_50pool'
 )
 
 dataset_train = ArtificialDataset(nom="Train").map(traitement,num_parallel_calls=tf.data.experimental.AUTOTUNE).cache().prefetch(tf.data.experimental.AUTOTUNE)
