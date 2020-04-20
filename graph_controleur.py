@@ -222,7 +222,8 @@ def create_model(hparam):
     global trop_param
     if trop_param == True:
         inpt = Input(shape=(256,256,3),dtype=tf.dtypes.float32,name='Entree_env10x256x256x3')
-        outpt = tf.keras.layers.GaussianNoise(5)(inpt)
+        outpt = keras.layers.Subtract()([inpt,inpt])
+        outpt = tf.keras.layers.GaussianNoise(5)(outpt)
         try:
             del model
         except:
