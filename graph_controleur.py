@@ -210,6 +210,7 @@ def create_model(hparam):
     G_Deconv.compteur = 0
     G_Pool.compteur = 0
     G_Conv.compteur = 0
+    G_Add.compteur = 0
     global compteur_model
     compteur_model += 1
     controleur = G_Controleur(hparam)
