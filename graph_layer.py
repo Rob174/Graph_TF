@@ -232,8 +232,12 @@ class G_Add(G_Layer):
     def eval(self):
             if self.parent != [] and True not in list(map(lambda x:self.controleur.couches_graph[x].couche_output == None,self.parent)):
                 if len(self.parent) > 1:
+                    shape_list = [self.controleur.couches_graph[i].couche_output.get_shape().as_list()[-1] for i in self.parent]
                     L = [self.controleur.couches_graph[i].couche_output for i in self.parent]
-                    self.couche_output = self.couche(L)
+                    if False not in list(map(lambda x:x==shape_list[0],shape_list)):
+                        self.couche_output = self.couche(L)
+                    else:
+                        self.couche_output = self.couche([Concatenate(L),Concatenate(L)])
                 else:
                     self.couche_output = self.couche([self.controleur.couches_graph[self.parent[0]].couche_output,self.controleur.couches_graph[self.parent[0]].couche_output])#Si la couche add n'a qu'une entrée on double celle-ci pour éviter l'erreur
                 return True
