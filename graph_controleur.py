@@ -74,6 +74,7 @@ class G_Controleur:
                                                 momentum=self.hp.Choice('momentum',[1.,0.1,0.01,0.001,10**-4,10**-5,0.],default=0),
                                                 nesterov=False),
                 loss='MSE',metrics=["accuracy"])
+        os.system("cp -r /content/Graph_TF/Bayesian_optimization '/content/drive/My Drive'")
         max_param = -1
         if os.path.isfile("/content/Graph_TF/max_param.txt") == True:
             with open("/content/Graph_TF/max_param.txt","r") as f:
