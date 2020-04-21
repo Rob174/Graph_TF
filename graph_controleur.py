@@ -12,9 +12,8 @@ from graphviz import Digraph
 os.system("pip install -U keras-tuner") #De https://github.com/keras-team/keras-tuner
 from kerastuner import BayesianOptimization, Objective
 #from tensorboard.plugins.hparams import api as hp
-def create_custom_accuray():
-    def custom_accuracy(y_true,y_pred):
-        return K.mean(K.equal(K.argmax(y_true, axis=-1),K.argmax(y_pred, axis=-1)))
+def custom_accuracy(y_true,y_pred):
+    return K.mean(K.equal(K.argmax(y_true, axis=-1),K.argmax(y_pred, axis=-1)))
 compteur_model = 0
 trop_param = False
 class G_Controleur:
