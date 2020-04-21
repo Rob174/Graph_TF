@@ -12,7 +12,9 @@ from graphviz import Digraph
 os.system("pip install -U keras-tuner") #De https://github.com/keras-team/keras-tuner
 from kerastuner import BayesianOptimization, Objective
 #from tensorboard.plugins.hparams import api as hp
-
+def create_custom_accuray():
+    def custom_accuracy(y_true,y_pred):
+        return K.mean(K.equal(K.argmax(y_true, axis=-1),K.argmax(y_pred, axis=-1)))
 compteur_model = 0
 trop_param = False
 class G_Controleur:
@@ -73,7 +75,7 @@ class G_Controleur:
         self.model.compile(optimizer=tf.keras.optimizers.SGD(learning_rate=self.hp.Choice('lr',[1.,0.1,0.01,0.001,10**-4,10**-5],default=0.01),
                                                 momentum=self.hp.Choice('momentum',[1.,0.1,0.01,0.001,10**-4,10**-5,0.],default=0),
                                                 nesterov=False),
-                loss='MSE',metrics=["accuracy"])
+                loss='MSE',metrics=[create_custom_accuray()])
         os.system("cp -r /content/Bayesian_optimization '/content/drive/My Drive'")
         max_param = -1
         if os.path.isfile("/content/Graph_TF/max_param.txt") == True:
