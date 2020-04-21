@@ -157,9 +157,6 @@ class G_Controleur:
         verif_boucle = self.couches_graph[couche_id_2].test_actualiser_enfant(couche_id_1)
         if verif_boucle == False:
             return
-        # for e in enfants_2:
-        #     if e in parents_1:
-        #         return
         #Vérifie si les tailles sont compatibles
         verification_taille = False
         if len(self.couches_graph[couche_id_1].parent) == 0:
@@ -233,6 +230,6 @@ def create_model(hparam):
         model.compile(optimizer=tf.keras.optimizers.SGD(learning_rate=1,
                                                 momentum=0,
                                                 nesterov=False),
-                    loss='MSE',metrics=["accuracy"])
+                    loss='MSE',metrics=[custom_accuracy])
         trop_param = False
     return model
