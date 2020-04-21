@@ -13,7 +13,7 @@ os.system("pip install -U keras-tuner") #De https://github.com/keras-team/keras-
 from kerastuner import BayesianOptimization, Objective
 #from tensorboard.plugins.hparams import api as hp
 def custom_accuracy(y_true,y_pred):
-    return K.mean(K.equal(K.argmax(y_true, axis=-1),K.argmax(y_pred, axis=-1)))
+    return K.mean(K.equal(y_true,y_pred))
 compteur_model = 0
 trop_param = False
 class G_Controleur:
