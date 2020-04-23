@@ -233,7 +233,18 @@ class G_Deconv(G_Layer):
         self.couche_deconv = 1
         
         self.controleur.add_couche(self)
-        self.controleur.graph.node(str(self.couche_id),shape='record',color='blue',label="{Deconv %d-%d|{{Filtres|%d}|{Activation|%s}|{Kernel l1|%s}|{Kernel l2|%s}|{Bias l1|%s}|{Bias l2|%s}|{Activation l1|%s}|{Activation l2|%s}}}"%(self.couche_id,self.couche_id_type,self.filters,self.activ,"/" if self.kernel_reg_choix == False else self.kernel_reg_l1,"/" if self.kernel_reg_choix == False else self.kernel_reg_l2,"/" if self.bias_reg_choix == False else self.bias_reg_l1,"/" if self.bias_reg_choix == False else self.bias_reg_l2,"/" if self.activation_reg_choix == False else self.activation_reg_l1,"/" if self.activation_reg_choix == False else self.activation_reg_l2))
+        self.controleur.graph.node(str(self.couche_id),shape='record',color='blue',
+                                   label="{Deconv %d-%d|{{Filtres|%d}|{Activation|%s}|{Kernel l1|%s}|{Kernel l2|%s}|{Bias l1|%s}|{Bias l2|%s}|{Activation l1|%s}|{Activation l2|%s}}}"%(
+                                                                                          self.couche_id,
+                                                                                          self.couche_id_type,
+                                                                                          self.filters,
+                                                                                          self.activ,
+                                                                                          "/" if self.kernel_reg_choix == False else self.kernel_reg_l1,
+                                                                                          "/" if self.kernel_reg_choix == False else self.kernel_reg_l2,
+                                                                                          "/" if self.bias_reg_choix == False else self.bias_reg_l1,
+                                                                                          "/" if self.bias_reg_choix == False else self.bias_reg_l2,
+                                                                                          "/" if self.activation_reg_choix == False else self.activation_reg_l1,
+                                                                                          "/" if self.activation_reg_choix == False else self.activation_reg_l2))
     def clean(self):
         super(G_Deconv,self).clean()
         del self.filters
