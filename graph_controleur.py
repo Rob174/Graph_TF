@@ -28,6 +28,7 @@ class G_Controleur:
         self.nb_deconv = self.hp.Int("nb_deconv",min_value=0,max_value=5)
         self.nb_pool = self.hp.Int("nb_pool",min_value=0,max_value=5)
         self.nb_add = self.hp.Int("nb_add",min_value=0,max_value=30)
+        self.nb_dense = self.hp.Int("nb_add",min_value=0,max_value=10)
         G_Input(self)
         for i in range(self.nb_conv):
             G_Conv(self)
@@ -35,6 +36,8 @@ class G_Controleur:
             G_Deconv(self)
         for i in range(self.nb_pool):
             G_Pool(self)
+        for i in range(self.nb_dense):
+            G_Dense(self)
         for i in range(self.nb_add):
             G_Add(self)
         G_Output(self)
@@ -209,6 +212,7 @@ def create_model(hparam):
     G_Deconv.compteur = 0
     G_Pool.compteur = 0
     G_Conv.compteur = 0
+    G_Dense.compteur = 0
     G_Add.compteur = 0
     global compteur_model
     compteur_model += 1
