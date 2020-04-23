@@ -159,7 +159,27 @@ class G_Conv(G_Layer):
         del self.filters
         del self.kernel
         del self.activ
-
+from tensorflow.keras.layers import Dense        
+class G_Dense(G_Layer):
+    compteur = 0
+    def __init__(self,controleur):
+        super(G_Dense,self).__init__(controleur)
+        self.couche_id_type = G_Dense.compteur
+        G_Dense.compteur += 1
+        self.filters = self.controleur.hp.Choice('filtre_dense_index_%d'%(self.couche_id_type),possibilites_filtres,default=1)
+        self.activ = self.controleur.hp.Choice("activation_dense_index_%d"%(self.couche_id_type),['linear','relu','elu','selu','tanh'],default='relu')
+        self.add_regularizer('dense')
+        self.couche = Dense(self.filters, activation=self.activ, use_bias=True, 
+                             name='Dense_id_gen_%d_f%d_activ_%s'%(self.controleur.couche_id,self.filters,self.activ),
+                             kernel_regularizer=self.kernel_reg,
+                             bias_regularizer=self.bias_reg,
+                             activity_regularizer=self.activation_reg)
+        self.controleur.add_couche(self)
+        self.controleur.graph.node(str(self.couche_id),shape='record',color='red',label="{Dense %d-%d|{{Units (Filtres)|%d}|{Activation|%s}|{Kernel l2|%s}|{Bias l1|%s}|{Bias l2|%s}|{Activation l1|%s}|{Activation l2|%s}}}"%(self.couche_id,self.couche_id_type,self.filters,self.activ,"/" if self.kernel_reg_choix == False else self.kernel_reg_l1,"/" if self.kernel_reg_choix == False else self.kernel_reg_l2,"/" if self.bias_reg_choix == False else self.bias_reg_l1,"/" if self.bias_reg_choix == False else self.bias_reg_l2,"/" if self.activation_reg_choix == False else self.activation_reg_l1,"/" if self.activation_reg_choix == False else self.activation_reg_l2))
+    def clean(self):
+        super(G_Dense,self).clean()
+        del self.filters
+        del self.activ
 from tensorflow.keras.layers import MaxPooling2D,AveragePooling2D
 class G_Pool(G_Layer):
     compteur = 0
