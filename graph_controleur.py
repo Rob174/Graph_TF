@@ -32,14 +32,8 @@ class G_Controleur:
             "dense":{"min":0,"max":10,"choix":None}
         }
         liste_classes = [G_Conv,G_Deconv,G_Pool,G_Add,G_Dense]
-        def update_choix(part_name,m,M):
-            """ Crée le nb de couches choisies par Keras Tuner et retourne le nb créé"""
-            nb = self.hp.Int("nb_"+name,min_value=m,max_value=M)
-            Class = next(x for x in liste_classes if name.title() in x.__class__.__name__)
-            for _ in range(nb):
-                Class(self)
-            return nb
         G_Input(self)
+        # Crée le nb de couches choisies par Keras Tuner et retourne le nb créé
         for name,v,Class in zip(self.nb_couches.items(),liste_classes):
             v["choix"] = self.hp.Int("nb_"+name,min_value=v["min"],max_value=v["max"])
             for _ in range(v["choix"]):
