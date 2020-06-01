@@ -264,8 +264,8 @@ class G_Add(G_Layer):
             return False
 class G_Output(G_Layer):
     def __init__(self,controleur):
-        super(G_Output,self).__init__(controleur)
+        super(G_Output,self).__init__(controleur,taille_de_sortie)
         self.invisible_adapt = True
         self.controleur.add_couche(self)
         self.controleur.graph.node(str(self.couche_id),shape='record',label="Output %d"%self.couche_id)
-        
+        self.taille_de_sortie = taille de sortie

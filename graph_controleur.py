@@ -24,22 +24,26 @@ class G_Controleur:
         self.nb_liens = 0
         self.hp = hparam
         self.graph = Digraph("graph",format='png')
-        self.nb_conv = self.hp.Int("nb_conv",min_value=4,max_value=20)
-        self.nb_deconv = self.hp.Int("nb_deconv",min_value=0,max_value=5)
-        self.nb_pool = self.hp.Int("nb_pool",min_value=0,max_value=5)
-        self.nb_add = self.hp.Int("nb_add",min_value=0,max_value=30)
-        self.nb_dense = self.hp.Int("nb_add",min_value=0,max_value=10)
+        self.nb_couches = {
+            "conv":{"min":4,"max":20,"choix":None},
+            "deconv":{"min":0,"max":5,"choix":None},
+            "pool":{"min":0,"max":5,"choix":None},
+            "add":{"min":0,"max":30,"choix":None},
+            "dense":{"min":0,"max":10,"choix":None}
+        }
+        liste_classes = [G_Conv,G_Deconv,G_Pool,G_Add,G_Dense]
+        def update_choix(part_name,m,M):
+            """ Crée le nb de couches choisies par Keras Tuner et retourne le nb créé"""
+            nb = self.hp.Int("nb_"+name,min_value=m,max_value=M)
+            Class = next(x for x in liste_classes if name.title() in x.__class__.__name__)
+            for _ in range(nb):
+                Class(self)
+            return nb
         G_Input(self)
-        for i in range(self.nb_conv):
-            G_Conv(self)
-        for i in range(self.nb_deconv):
-            G_Deconv(self)
-        for i in range(self.nb_pool):
-            G_Pool(self)
-        for i in range(self.nb_dense):
-            G_Dense(self)
-        for i in range(self.nb_add):
-            G_Add(self)
+        for name,v,Class in zip(self.nb_couches.items(),liste_classes):
+            v["choix"] = self.hp.Int("nb_"+name,min_value=v["min"],max_value=v["max"])
+            for _ in range(v["choix"]):
+                Class(self)
         G_Output(self)
         self.couches_graph[0].eval()
         self.lier(0,1,forcer=True)
