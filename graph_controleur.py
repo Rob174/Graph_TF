@@ -41,11 +41,11 @@ class G_Controleur:
         G_Output(self)
         self.couches_graph[0].eval()
         self.lier(0,1,forcer=True)
-        for i,n in enumerate(self.couches_graph):
+        for n in self.couches_graph:
             n.link()
         self.afficher("post_liaison")
         #On fournit l'input aux noeuds racines
-        for i,n in enumerate(self.couches_graph):
+        for n in self.couches_graph:
             if len(n.parent)==0:
                 print("Liaison théorique entre %d et %d"%(self.couches_graph[0].couche_id,n.couche_id))
                 self.lier(self.couches_graph[0].couche_id,n.couche_id,forcer=True)
@@ -57,7 +57,7 @@ class G_Controleur:
             index_output -= 1
         if index_output < 0:
             raise Exception("Output missing")
-        for j,n in enumerate(self.couches_graph):
+        for n in self.couches_graph:
             if len(n.enfant) == 0 and n.__class__.__name__ != "G_Output":
                 self.lier(n.couche_id,self.couches_graph[index_output].couche_id,forcer=True)
         self.afficher("fin_liaisons")
